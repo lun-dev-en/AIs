@@ -17,7 +17,8 @@ from app.main import create_app
 
 def main():
     with TemporaryDirectory(prefix='personality-lab-smoke-') as directory:
-        settings = replace(Settings.from_env(), database_path=Path(directory) / 'smoke.sqlite3')
+        settings = replace(Settings.from_env(), database_path=Path(directory) / 'smoke.sqlite3',
+                           demo_database_path=Path(directory) / 'smoke-demo.sqlite3')
         with TestClient(create_app(settings)) as client:
             health = client.get('/api/health').json()
             if not health['ready']:

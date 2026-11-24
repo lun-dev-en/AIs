@@ -294,6 +294,77 @@ button:disabled:hover {
 .save-state.changed {
   color: #a07527;
 }
+.mode-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 20px 22px;
+  margin-bottom: 24px;
+  border: 1px solid #dedaf1;
+  border-radius: 12px;
+  background: #f0eefb;
+}
+.mode-banner-copy {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.mode-banner-copy > svg {
+  color: var(--accent);
+  margin-top: 3px;
+}
+.mode-banner h2 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+.mode-banner p {
+  margin-top: 4px;
+  font-size: 0.875rem;
+  color: #686580;
+}
+.mode-banner .demo-hint {
+  color: #966c26;
+}
+@media (max-width: 760px) {
+  .mode-banner {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 18px;
+  }
+}
+.mode-banner.normal {
+  background: #f0f4fc;
+  border-color: #dce4f3;
+}
+.mode-options {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 9px;
+  background: #ffffffa6;
+  flex-shrink: 0;
+}
+.mode-options button {
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  white-space: nowrap;
+  color: #76718c;
+}
+.mode-options button[aria-pressed="true"] {
+  color: #574eb0;
+  background: #fff;
+  border-color: #d9d4f0;
+  box-shadow: 0 1px 4px #3330520d;
+}
+@media (max-width: 760px) {
+  .mode-options button {
+    flex: 1;
+  }
+}
 .personality-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

@@ -1,3 +1,4 @@
+export type LabMode = "normal" | "demo";
 export type Formed = {
   formed_id: number;
   memory_id: number;
@@ -66,6 +67,8 @@ export type Response = {
 };
 export type Run = { question: Question; responses: Response[] };
 export type Health = {
+  mode: LabMode | null;
+  generation_busy: boolean;
   ready: boolean;
   model_name: string;
   error: string | null;

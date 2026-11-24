@@ -12,6 +12,8 @@ load_dotenv(ROOT / '.env')
 @dataclass(frozen=True)
 class Settings:
     database_path: Path = ROOT / 'data' / 'personality-lab.sqlite3'
+    demo_database_path: Path | None = None
+    frontend_origin: str = 'http://127.0.0.1:3000'
     ollama_url: str = 'http://127.0.0.1:11434'
     model: str = 'qwen3:8b'
     num_ctx: int = 8192
@@ -19,6 +21,12 @@ class Settings:
     timeout: float = 300
 
     def __post_init__(self):
+        if self.database_path.resolve() == self.demo_path.resolve():
+            raise ValueError('通常モードとデモモードには別のデータベースを指定してください。')
+        origin = urlparse(self.frontend_origin)
+        if (origin.scheme != 'http' or origin.hostname not in {'localhost', '127.0.0.1', '::1'}
+                or origin.username or origin.password or origin.path or origin.query or origin.fragment):
+            raise ValueError('FRONTEND_ORIGIN はローカル画面の HTTP オリジンを指定してください。')
         url = urlparse(self.ollama_url)
         if (url.scheme != 'http' or url.hostname not in {'localhost', '127.0.0.1', '::1'}
                 or url.username or url.password or url.path not in {'', '/'}
@@ -31,10 +39,17 @@ class Settings:
         if self.num_ctx - self.num_predict < 1536 or self.timeout <= 0:
             raise ValueError('入力用のコンテキスト長またはタイムアウト設定を確認してください。')
 
+    @property
+    def demo_path(self):
+        return self.demo_database_path or self.database_path.with_name(
+            f'{self.database_path.stem}-demo{self.database_path.suffix}')
+
     @classmethod
     def from_env(cls):
         return cls(
             database_path=Path(os.getenv('DATABASE_PATH', str(ROOT / 'data' / 'personality-lab.sqlite3'))),
+            demo_database_path=Path(os.environ['DEMO_DATABASE_PATH']) if os.getenv('DEMO_DATABASE_PATH') else None,
+            frontend_origin=os.getenv('FRONTEND_ORIGIN', 'http://127.0.0.1:3000'),
             ollama_url=os.getenv('OLLAMA_BASE_URL', 'http://127.0.0.1:11434').rstrip('/'),
             model=os.getenv('OLLAMA_MODEL', 'qwen3:8b'),
             num_ctx=int(os.getenv('OLLAMA_NUM_CTX', '8192')),

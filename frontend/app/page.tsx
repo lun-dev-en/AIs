@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, json } from "@/lib/api";
+import { api, getLabMode, json, MODE_STORAGE_KEY } from "@/lib/api";
 import type {
   Conditions,
   Health,
+  LabMode,
   Profile,
   Question,
   Response,
@@ -60,6 +61,8 @@ export default function Lab() {
   const sendingRef = useRef(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [unsaved, setUnsaved] = useState(false);
+  const [mode, setMode] = useState<LabMode>("normal");
+  const [switchingMode, setSwitchingMode] = useState(false);
 
   const dirty = useCallback((key: string, value: boolean) => {
     if (value) dirtyKeys.current.add(key);
@@ -83,6 +86,8 @@ export default function Lab() {
       return result;
     } catch (e) {
       setHealth({
+        mode: null,
+        generation_busy: false,
         ready: false,
         model_name: "",
         active_question_id: null,
@@ -113,6 +118,7 @@ export default function Lab() {
   }, [reload, refreshHealth, notify]);
 
   useEffect(() => {
+    setMode(getLabMode());
     void initialize();
     return () => {
       if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -184,9 +190,27 @@ export default function Lab() {
     action();
   }
 
+  function switchMode(nextMode: LabMode) {
+    if (nextMode === mode || switchingMode || busy) return;
+    guard(() => {
+      try {
+        localStorage.setItem(MODE_STORAGE_KEY, nextMode);
+        dirtyKeys.current.clear();
+        setSwitchingMode(true);
+        // Reload clears all forms, history and polling before reading a different DB.
+        window.location.reload();
+      } catch {
+        notify(
+          "モードを保存できませんでした。ブラウザのローカルストレージを有効にしてください。",
+          true,
+        );
+      }
+    });
+  }
+
   async function submit(e?: React.FormEvent, previous?: Question) {
     e?.preventDefault();
-    if (sendingRef.current || generating || health?.active_question_id) return;
+    if (sendingRef.current || generating || health?.generation_busy) return;
     const text = previous?.question || question.trim();
     if (!text) return;
     sendingRef.current = true;
@@ -250,7 +274,7 @@ export default function Lab() {
     }
   }
 
-  const busy = sending || !!generating || !!health?.active_question_id;
+  const busy = sending || !!generating || !!health?.generation_busy;
   const baseline = !Object.values(conditions).some(Boolean);
   const completed =
     run?.responses.filter((r) => r.status === "complete").length || 0;
@@ -396,6 +420,48 @@ export default function Lab() {
             <span className="spinner" />
             人格を読み込んでいます…
           </div>
+        )}
+        {loaded && (
+          <section className={`mode-banner ${mode}`} aria-label="データモード">
+            <div className="mode-banner-copy">
+              <Icon name="flask" size={24} />
+              <div>
+                <h2>
+                  {mode === "demo"
+                    ? "デモモード：ダミーデータで試す"
+                    : "通常モード：自分のデータを入力"}
+                </h2>
+                <p>
+                  {mode === "demo"
+                    ? "サンプルの記憶・考え・価値観が入った専用DBを使用中です。編集や回答履歴も通常モードとは別に保存します。"
+                    : "記憶が空のDBから始め、自由に入力できます。保存した内容は、モードを切り替えても残ります。"}
+                </p>
+                {busy && (
+                  <p className="demo-hint">
+                    回答の生成が終わるとモードを切り替えられます。
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="mode-options" role="group" aria-label="モード切替">
+              <button
+                type="button"
+                aria-pressed={mode === "normal"}
+                disabled={busy || switchingMode}
+                onClick={() => switchMode("normal")}
+              >
+                通常モード
+              </button>
+              <button
+                type="button"
+                aria-pressed={mode === "demo"}
+                disabled={busy || switchingMode}
+                onClick={() => switchMode("demo")}
+              >
+                デモモード
+              </button>
+            </div>
+          </section>
         )}
         {loaded && tab === "settings" && (
           <>

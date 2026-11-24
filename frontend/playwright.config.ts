@@ -13,7 +13,7 @@ export default defineConfig({
   timeout: 45000,
   expect: { timeout: 10000 },
   use: {
-    baseURL: "http://127.0.0.1:3000",
+    baseURL: "http://127.0.0.1:13000",
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
@@ -37,20 +37,27 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `"${path.resolve("../.venv/Scripts/python.exe")}" -m uvicorn app.main:app --app-dir ../backend --host 127.0.0.1 --port 8000`,
-      url: "http://127.0.0.1:8000/api/personalities",
+      command: `"${path.resolve("../.venv/Scripts/python.exe")}" -m uvicorn app.main:app --app-dir ../backend --host 127.0.0.1 --port 18000`,
+      url: "http://127.0.0.1:18000/api/personalities",
       reuseExistingServer: false,
       env: {
         DATABASE_PATH: testDatabase,
+        DEMO_DATABASE_PATH: testDatabase.replace(/\.sqlite3$/, "-demo.sqlite3"),
+        FRONTEND_ORIGIN: "http://127.0.0.1:13000",
         OLLAMA_MODEL: process.env.E2E_MODEL || "qwen3:8b",
       },
       timeout: 30000,
     },
     {
-      command: "node node_modules/next/dist/bin/next dev --hostname 127.0.0.1",
-      url: "http://127.0.0.1:3000",
+      command:
+        "node node_modules/next/dist/bin/next dev --hostname 127.0.0.1 --port 13000",
+      url: "http://127.0.0.1:13000",
       reuseExistingServer: false,
-      env: { NEXT_TELEMETRY_DISABLED: "1" },
+      env: {
+        NEXT_TELEMETRY_DISABLED: "1",
+        LAB_TEST_BUILD: "1",
+        BACKEND_URL: "http://127.0.0.1:18000",
+      },
       timeout: 60000,
     },
   ],
